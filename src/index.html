@@ -1,0 +1,147 @@
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Line Plot</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+      .gridlines line {
+        stroke: #bbb;
+      }
+
+      .gridlines .domain {
+        stroke: none;
+      }
+    </style>
+  </head>
+  <body>
+    <svg id="titleSvg" height="100" width="1000"></svg>
+    <svg
+      id="lineplot"
+      height="500"
+      width="1000"
+      style="margin-bottom: 50px"
+    ></svg>
+    <script>
+      const titleSvg = d3.select("svg#titleSvg");
+      titleSvg
+        .append("text")
+        .attr("x", 430)
+        .attr("y", 40)
+        .attr("text-anchor", "middle")
+        .style("font-size", "24px")
+        .style("font-weight", "bold")
+        .text("Energy Patterns in One Year");
+
+      // add the caption
+      titleSvg
+        .append("text")
+        .attr("x", 450)
+        .attr("y", 80)
+        .attr("text-anchor", "middle")
+        .style("font-size", "14px")
+        .text(`Trends in energy levels of songs Reid listened to in one year.`);
+
+      const svg = d3.select("svg#lineplot");
+      const width = svg.attr("width");
+      const height = svg.attr("height");
+      const margins = { top: 10, right: 220, bottom: 70, left: 70 };
+      const chartWidth = width - margins.left - margins.right;
+      const chartHeight = height - margins.top - margins.bottom;
+
+      let annotations = svg.append("g").attr("id", "annotations");
+      let chartArea = svg
+        .append("g")
+        .attr("transform", `translate(${margins.left},${margins.top})`);
+
+      let colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+
+      d3.csv("reid_final_data.csv").then((data) => {
+        const timeParser = d3.timeParse("%Y-%m-%d %H:%M:%S%Z");
+        data.forEach((d, i) => {
+          d["danceability"] = Number(d["danceability"]);
+          d["energy"] = Number(d["energy"]);
+          d["ts"] = timeParser(d["ts"]);
+          //   console.log(d["ts"].getFullYear());
+          //   console.log(d["ts"].getMonth());
+        });
+        console.log(data);
+
+        // y axis - danceability
+        const danceExtent = d3.extent(data, (d) => d["danceability"]);
+        const danceScale = d3
+          .scaleLinear()
+          .domain(danceExtent)
+          .range([chartHeight, 0]);
+        let leftAxis = d3.axisLeft(danceScale);
+        let leftGridlines = d3
+          .axisLeft(danceScale)
+          .tickSize(-chartWidth - 10)
+          .tickFormat("");
+        annotations
+          .append("g")
+          .attr("class", "y axis")
+          .attr("transform", `translate(${margins.left - 10},${margins.top})`)
+          .call(leftAxis);
+        annotations
+          .append("g")
+          .attr("class", "y gridlines")
+          .attr("transform", `translate(${margins.left - 10},${margins.top})`)
+          .call(leftGridlines);
+
+        //  x axis - date
+        const dateExtent = d3.extent(data, (d) => d["ts"]);
+        const dateScale = d3
+          .scaleTime()
+          .domain(dateExtent)
+          .range([0, chartWidth]);
+        let bottomAxis = d3.axisBottom(dateScale);
+        let bottomGridlines = d3
+          .axisBottom(dateScale)
+          .tickSize(-chartHeight - 10)
+          .tickFormat("");
+        annotations
+          .append("g")
+          .attr("class", "x axis")
+          .attr(
+            "transform",
+            `translate(${margins.left},${chartHeight + margins.top + 10})`
+          )
+          .call(bottomAxis);
+        annotations
+          .append("g")
+          .attr("class", "x gridlines")
+          .attr(
+            "transform",
+            `translate(${margins.left},${chartHeight + margins.top + 10})`
+          )
+          .call(bottomGridlines);
+
+        // line generator
+        var lineGen = d3
+          .line()
+          .x((d) => dateScale(d["ts"]))
+          .y((d) => danceScale(d["danceability"]))
+          .curve(d3.curveMonotoneX);
+
+        chartArea
+          .append("path")
+          .datum(data)
+          .attr("class", "line")
+          .attr("fill", "none")
+          .attr("stroke", "steelblue")
+          .attr("stroke-width", 3)
+          .attr("d", lineGen);
+
+        // add circles
+        chartArea
+          .selectAll("circle")
+          .data(data)
+          .join("circle")
+          .attr("r", 3)
+          .attr("fill", "navy")
+          .attr("cx", (d) => dateScale(d["ts"]))
+          .attr("cy", (d) => danceScale(d["danceability"]));
+      });
+    </script>
+  </body>
+</html>
