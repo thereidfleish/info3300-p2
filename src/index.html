@@ -64,6 +64,10 @@
           //   console.log(d["ts"].getFullYear());
           //   console.log(d["ts"].getMonth());
         });
+        console.log("data before sorting: ");
+        console.log(data);
+        console.log("data after sorting: ");
+        data.sort((a, b) => a["ts"] - b["ts"]);
         console.log(data);
 
         // y axis - danceability
