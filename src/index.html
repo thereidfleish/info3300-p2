@@ -153,6 +153,7 @@
       console.log(condensedData);
 
       function updateChart(inputData, metric) {
+
         // y axis - danceability
         console.log(inputData)
         console.log(metric)
@@ -267,8 +268,9 @@
           );
 
         
-
-        const titleSvg = d3.select("svg#titleSvg");
+          const titleSvg = d3.select("svg#titleSvg");
+          titleSvg.selectAll(".chart-title").remove();
+        
         titleSvg
           .append("text")
           .attr("class", "chart-title")
