@@ -58,111 +58,6 @@
     </div>
     <svg id="barchart" height="500" width="1000"></svg>
     <script>
-      /* Year interval windows & buttons */
-      let startYear = 2015;
-      let endYear = 2024;
-
-      //update the displayed value
-      function updateDisplay(container, value) {
-        container.select(".window-display").text(value);
-      }
-
-      // create the window with increment and decrement buttons
-      function createYearWindow(
-        containerId,
-        initialValue,
-        onIncrement,
-        onDecrement
-      ) {
-        const container = d3.select(containerId);
-
-        // display area
-        container
-          .append("div")
-          .attr("class", "window-display")
-          .text(initialValue);
-
-        // increment button
-        container
-          .append("button")
-          .attr("class", "button")
-          .text("▲")
-          .on("click", onIncrement);
-
-        // decrement button
-        container
-          .append("button")
-          .attr("class", "button")
-          .text("▼")
-          .on("click", onDecrement);
-      }
-
-      // startWindow handlers
-      createYearWindow(
-        "#startWindowContainer",
-        startYear,
-        () => {
-          if (startYear < endYear) {
-            startYear++;
-            updateDisplay(d3.select("#startWindowContainer"), startYear);
-            dataForInterval(startYear, endYear);
-            updateChart(intervalData);
-          }
-        },
-        () => {
-          if (startYear > 2015) {
-            startYear--;
-            updateDisplay(d3.select("#startWindowContainer"), startYear);
-            dataForInterval(startYear, endYear);
-            updateChart(intervalData);
-          }
-        }
-      );
-
-      // endWindow handlers
-      createYearWindow(
-        "#endWindowContainer",
-        endYear,
-        () => {
-          if (endYear < 2024) {
-            endYear++;
-            updateDisplay(d3.select("#endWindowContainer"), endYear);
-            dataForInterval(startYear, endYear);
-            updateChart(intervalData);
-          }
-        },
-        () => {
-          if (endYear > startYear) {
-            endYear--;
-            updateDisplay(d3.select("#endWindowContainer"), endYear);
-            dataForInterval(startYear, endYear);
-            updateChart(intervalData);
-          }
-        }
-      );
-
-      const titleSvg = d3.select("svg#titleSvg");
-      titleSvg
-        .append("text")
-        .attr("x", 430)
-        .attr("y", 40)
-        .attr("text-anchor", "middle")
-        .style("font-size", "24px")
-        .style("font-weight", "bold")
-        .text("Danceability Patterns in One Year");
-
-      // add the caption
-      titleSvg
-        .append("text")
-        .attr("x", 450)
-        .attr("y", 80)
-        .attr("text-anchor", "middle")
-        .style("font-size", "14px")
-        .text(
-          `Trends in danceability levels of songs Reid listened to in one year.`
-        );
-
-      /*  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
       /* Chart area */
 
       const svg = d3.select("svg#lineplot");
@@ -176,7 +71,6 @@
       let chartArea = svg
         .append("g")
         .attr("transform", `translate(${margins.left},${margins.top})`);
-
       let colorScale = d3.scaleOrdinal(d3.schemeCategory10);
 
       d3.csv("reid_final_data.csv").then((data) => {
@@ -243,14 +137,18 @@
             .scaleLinear()
             .domain(danceExtent)
             .range([chartHeight, 0]);
+
           let leftAxis = d3.axisLeft(danceScale);
           let leftGridlines = d3
             .axisLeft(danceScale)
             .tickSize(-chartWidth - 10)
             .tickFormat("");
-          // Clear previous y-axis and y-axis gridlines
-          annotations.selectAll(".y.axis").remove();
-          annotations.selectAll(".y.gridlines").remove();
+
+          // Clear previous annotations, lines, circles
+          d3.select("#annotations").selectAll("*").remove();
+          d3.select("#lineplot").selectAll("path").remove();
+          d3.select("#lineplot").selectAll("circle").remove();
+
           annotations
             .append("g")
             .attr("class", "y axis")
@@ -270,14 +168,13 @@
             .scaleTime()
             .domain(dateExtent)
             .range([0, chartWidth]);
+
           let bottomAxis = d3.axisBottom(dateScale).tickFormat(monthYearFormat);
           let bottomGridlines = d3
             .axisBottom(dateScale)
             .tickSize(-chartHeight - 10)
             .tickFormat("");
-          // clear previous x-axis and x-axis gridlines
-          annotations.selectAll(".x.axis").remove();
-          annotations.selectAll(".x.gridlines").remove();
+
           annotations
             .append("g")
             .attr("class", "x axis")
@@ -286,6 +183,7 @@
               `translate(${margins.left},${chartHeight + margins.top + 10})`
             )
             .call(bottomAxis);
+
           annotations
             .append("g")
             .attr("class", "x gridlines")
@@ -344,23 +242,142 @@
                 exit.transition().duration(750).attr("opacity", 0).remove()
             );
         }
+
         /* Function to flatten multiple years into a 1D array*/
         intervalData = [];
         function dataForInterval(start, end) {
-          intervalData = []; // Clear intervalData to start fresh
+          // Clear intervalData to start fresh
+          intervalData = [];
+
           for (const yearStr of Object.keys(condensedData)) {
             const year = Number(yearStr);
+
             if (year >= start && year <= end) {
               intervalData = intervalData.concat(condensedData[year]);
             }
           }
         }
+        /*  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+        /* Year interval windows & buttons */
+        let startYear = 2015;
+        let endYear = 2024;
+
+        //update the displayed value
+        function updateDisplay(container, value) {
+          container.select(".window-display").text(value);
+        }
+
+        // create the window with increment and decrement buttons
+        function createYearWindow(
+          containerId,
+          initialValue,
+          onIncrement,
+          onDecrement
+        ) {
+          const container = d3.select(containerId);
+
+          // display area
+          container
+            .append("div")
+            .attr("class", "window-display")
+            .text(initialValue);
+
+          // increment button
+          container
+            .append("button")
+            .attr("class", "button")
+            .text("▲")
+            .on("click", onIncrement);
+
+          // decrement button
+          container
+            .append("button")
+            .attr("class", "button")
+            .text("▼")
+            .on("click", onDecrement);
+        }
+
+        // startWindow handlers
+        createYearWindow(
+          "#startWindowContainer",
+          startYear,
+          () => {
+            if (startYear < endYear) {
+              startYear++;
+              updateDisplay(d3.select("#startWindowContainer"), startYear);
+              /* reset interval data*/
+              console.log("Start window increment");
+              console.log(`start year: ${startYear}`);
+              dataForInterval(startYear, endYear);
+              updateChart(intervalData);
+            }
+          },
+          () => {
+            if (startYear > 2015) {
+              startYear--;
+              updateDisplay(d3.select("#startWindowContainer"), startYear);
+              console.log("Start window decrement");
+              console.log(`start year: ${startYear}`);
+              dataForInterval(startYear, endYear);
+              updateChart(intervalData);
+            }
+          }
+        );
+
+        // endWindow handlers
+        createYearWindow(
+          "#endWindowContainer",
+          endYear,
+          () => {
+            if (endYear < 2024) {
+              endYear++;
+              updateDisplay(d3.select("#endWindowContainer"), endYear);
+              console.log("End window increment");
+              console.log(`end year: ${endYear}`);
+              dataForInterval(startYear, endYear);
+              updateChart(intervalData);
+            }
+          },
+          () => {
+            if (endYear > startYear) {
+              endYear--;
+              updateDisplay(d3.select("#endWindowContainer"), endYear);
+              console.log("End window decrement");
+              console.log(`end year: ${endYear}`);
+              dataForInterval(startYear, endYear);
+              updateChart(intervalData);
+            }
+          }
+        );
+
+        const titleSvg = d3.select("svg#titleSvg");
+        titleSvg
+          .append("text")
+          .attr("x", 430)
+          .attr("y", 40)
+          .attr("text-anchor", "middle")
+          .style("font-size", "24px")
+          .style("font-weight", "bold")
+          .text("Danceability Patterns in One Year");
+
+        // add the caption
+        titleSvg
+          .append("text")
+          .attr("x", 450)
+          .attr("y", 80)
+          .attr("text-anchor", "middle")
+          .style("font-size", "14px")
+          .text(
+            `Trends in danceability levels of songs Reid listened to in one year.`
+          );
+        /*  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
         /* initial chart rendering*/
         dataForInterval(startYear, endYear);
         updateChart(intervalData);
       });
 
+      /*  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
       //Nicole Bar Graph
       const barSvg = d3.select("svg#barchart");
       const barWidth = barSvg.attr("width");
