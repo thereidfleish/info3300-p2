@@ -320,7 +320,7 @@
 
       metricSelect.on("change", function () {
         selectedMetric = this.value;
-        titleSvg.selectAll(".chart-title").remove();
+        
         updateChart(intervalData, selectedMetric);
       })
 
