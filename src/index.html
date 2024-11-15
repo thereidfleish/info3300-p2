@@ -266,7 +266,7 @@
               exit.transition().duration(750).attr("opacity", 0).remove()
           );
 
-        // titleSvg.selectAll(".chart-title").remove();
+        
 
         const titleSvg = d3.select("svg#titleSvg");
         titleSvg
@@ -320,6 +320,7 @@
 
       metricSelect.on("change", function () {
         selectedMetric = this.value;
+        titleSvg.selectAll(".chart-title").remove();
         updateChart(intervalData, selectedMetric);
       })
 
