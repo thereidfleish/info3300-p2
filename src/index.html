@@ -11,6 +11,35 @@
       .gridlines .domain {
         stroke: none;
       }
+      .window-container {
+        display: inline-block;
+        margin: 10px;
+        text-align: center;
+      }
+
+      .window-display {
+        font-size: 24px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        width: 60px;
+        user-select: none;
+        background-color: #f9f9f9;
+        border-radius: 5px;
+        margin-bottom: 5px;
+      }
+
+      .button {
+        font-size: 16px;
+        padding: 5px 10px;
+        margin: 2px;
+        cursor: pointer;
+        border-radius: 5px;
+        background-color: #ccc;
+      }
+
+      .button:active {
+        background-color: #aaa;
+      }
     </style>
   </head>
   <body>
@@ -21,14 +50,97 @@
       width="1000"
       style="margin-bottom: 50px"
     ></svg>
-
+    <div id="startWindowContainer" class="window-container"></div>
+    <div id="endWindowContainer" class="window-container"></div>
     <div>
       <label for="yearSelect">Select Year: </label>
       <select id="yearSelect"></select>
     </div>
     <svg id="barchart" height="500" width="1000"></svg>
-    
     <script>
+      /* Year interval windows & buttons */
+      let startYear = 2015;
+      let endYear = 2024;
+
+      //update the displayed value
+      function updateDisplay(container, value) {
+        container.select(".window-display").text(value);
+      }
+
+      // create the window with increment and decrement buttons
+      function createYearWindow(
+        containerId,
+        initialValue,
+        onIncrement,
+        onDecrement
+      ) {
+        const container = d3.select(containerId);
+
+        // display area
+        container
+          .append("div")
+          .attr("class", "window-display")
+          .text(initialValue);
+
+        // increment button
+        container
+          .append("button")
+          .attr("class", "button")
+          .text("▲")
+          .on("click", onIncrement);
+
+        // decrement button
+        container
+          .append("button")
+          .attr("class", "button")
+          .text("▼")
+          .on("click", onDecrement);
+      }
+
+      // startWindow handlers
+      createYearWindow(
+        "#startWindowContainer",
+        startYear,
+        () => {
+          if (startYear < endYear) {
+            startYear++;
+            updateDisplay(d3.select("#startWindowContainer"), startYear);
+            dataForInterval(startYear, endYear);
+            updateChart(intervalData);
+          }
+        },
+        () => {
+          if (startYear > 2015) {
+            startYear--;
+            updateDisplay(d3.select("#startWindowContainer"), startYear);
+            dataForInterval(startYear, endYear);
+            updateChart(intervalData);
+          }
+        }
+      );
+
+      // endWindow handlers
+      createYearWindow(
+        "#endWindowContainer",
+        endYear,
+        () => {
+          if (endYear < 2024) {
+            endYear++;
+            updateDisplay(d3.select("#endWindowContainer"), endYear);
+            dataForInterval(startYear, endYear);
+            updateChart(intervalData);
+          }
+        },
+        () => {
+          if (endYear > startYear) {
+            endYear--;
+            updateDisplay(d3.select("#endWindowContainer"), endYear);
+            dataForInterval(startYear, endYear);
+            updateChart(intervalData);
+          }
+        }
+      );
+
       const titleSvg = d3.select("svg#titleSvg");
       titleSvg
         .append("text")
@@ -37,7 +149,7 @@
         .attr("text-anchor", "middle")
         .style("font-size", "24px")
         .style("font-weight", "bold")
-        .text("Energy Patterns in One Year");
+        .text("Danceability Patterns in One Year");
 
       // add the caption
       titleSvg
@@ -46,7 +158,12 @@
         .attr("y", 80)
         .attr("text-anchor", "middle")
         .style("font-size", "14px")
-        .text(`Trends in energy levels of songs Reid listened to in one year.`);
+        .text(
+          `Trends in danceability levels of songs Reid listened to in one year.`
+        );
+
+      /*  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+      /* Chart area */
 
       const svg = d3.select("svg#lineplot");
       const width = svg.attr("width");
@@ -64,94 +181,184 @@
 
       d3.csv("reid_final_data.csv").then((data) => {
         const timeParser = d3.timeParse("%Y-%m-%d %H:%M:%S%Z");
+
+        // Step 1: Convert data to correct type + gather monthly data
+        let monthlyData = {};
         data.forEach((d, i) => {
           d["danceability"] = Number(d["danceability"]);
           d["energy"] = Number(d["energy"]);
           d["ts"] = timeParser(d["ts"]);
-          //   console.log(d["ts"].getFullYear());
-          //   console.log(d["ts"].getMonth());
+
+          const month = d["ts"].getMonth();
+          const year = d["ts"].getFullYear();
+          const currEnergy = d["energy"];
+          const currDance = d["danceability"];
+
+          /* if year not in dictionary (null), initialize as empty obj */
+          if (!monthlyData[year]) {
+            monthlyData[year] = {};
+          }
+
+          /* Only initialize the month if it has data */
+          if (!monthlyData[year][month]) {
+            monthlyData[year][month] = {
+              count: 0,
+              energySum: 0,
+              danceSum: 0,
+            };
+          }
+
+          monthlyData[year][month].count += 1;
+          monthlyData[year][month].energySum += currEnergy;
+          monthlyData[year][month].danceSum += currDance;
         });
-        console.log("data before sorting: ");
-        console.log(data);
-        console.log("data after sorting: ");
-        data.sort((a, b) => a["ts"] - b["ts"]);
-        console.log(data);
 
-        // y axis - danceability
-        const danceExtent = d3.extent(data, (d) => d["danceability"]);
-        const danceScale = d3
-          .scaleLinear()
-          .domain(danceExtent)
-          .range([chartHeight, 0]);
-        let leftAxis = d3.axisLeft(danceScale);
-        let leftGridlines = d3
-          .axisLeft(danceScale)
-          .tickSize(-chartWidth - 10)
-          .tickFormat("");
-        annotations
-          .append("g")
-          .attr("class", "y axis")
-          .attr("transform", `translate(${margins.left - 10},${margins.top})`)
-          .call(leftAxis);
-        annotations
-          .append("g")
-          .attr("class", "y gridlines")
-          .attr("transform", `translate(${margins.left - 10},${margins.top})`)
-          .call(leftGridlines);
+        // Step 2: Calculate averages and create condensedData
+        let condensedData = {};
+        for (const year in monthlyData) {
+          condensedData[year] = [];
 
-        //  x axis - date
-        const dateExtent = d3.extent(data, (d) => d["ts"]);
-        const dateScale = d3
-          .scaleTime()
-          .domain(dateExtent)
-          .range([0, chartWidth]);
-        let bottomAxis = d3.axisBottom(dateScale);
-        let bottomGridlines = d3
-          .axisBottom(dateScale)
-          .tickSize(-chartHeight - 10)
-          .tickFormat("");
-        annotations
-          .append("g")
-          .attr("class", "x axis")
-          .attr(
-            "transform",
-            `translate(${margins.left},${chartHeight + margins.top + 10})`
-          )
-          .call(bottomAxis);
-        annotations
-          .append("g")
-          .attr("class", "x gridlines")
-          .attr(
-            "transform",
-            `translate(${margins.left},${chartHeight + margins.top + 10})`
-          )
-          .call(bottomGridlines);
+          for (const month in monthlyData[year]) {
+            const monthData = monthlyData[year][month];
 
-        // line generator
-        var lineGen = d3
-          .line()
-          .x((d) => dateScale(d["ts"]))
-          .y((d) => danceScale(d["danceability"]))
-          .curve(d3.curveMonotoneX);
+            if (monthData.count > 0) {
+              const date = new Date(year, month);
 
-        chartArea
-          .append("path")
-          .datum(data)
-          .attr("class", "line")
-          .attr("fill", "none")
-          .attr("stroke", "steelblue")
-          .attr("stroke-width", 3)
-          .attr("d", lineGen);
+              condensedData[year].push({
+                date: date,
+                danceability: monthData.danceSum / monthData.count,
+                energy: monthData.energySum / monthData.count,
+              });
+            }
+          }
+        }
 
-        // add circles
-        chartArea
-          .selectAll("circle")
-          .data(data)
-          .join("circle")
-          .attr("r", 3)
-          .attr("fill", "navy")
-          .attr("cx", (d) => dateScale(d["ts"]))
-          .attr("cy", (d) => danceScale(d["danceability"]));
+        console.log("condensedData:");
+        console.log(condensedData);
+
+        function updateChart(inputData) {
+          // y axis - danceability
+          const danceExtent = d3.extent(inputData, (d) => d["danceability"]);
+          const danceScale = d3
+            .scaleLinear()
+            .domain(danceExtent)
+            .range([chartHeight, 0]);
+          let leftAxis = d3.axisLeft(danceScale);
+          let leftGridlines = d3
+            .axisLeft(danceScale)
+            .tickSize(-chartWidth - 10)
+            .tickFormat("");
+          // Clear previous y-axis and y-axis gridlines
+          annotations.selectAll(".y.axis").remove();
+          annotations.selectAll(".y.gridlines").remove();
+          annotations
+            .append("g")
+            .attr("class", "y axis")
+            .attr("transform", `translate(${margins.left - 10},${margins.top})`)
+            .call(leftAxis);
+
+          annotations
+            .append("g")
+            .attr("class", "y gridlines")
+            .attr("transform", `translate(${margins.left - 10},${margins.top})`)
+            .call(leftGridlines);
+
+          //  x axis - date
+          const monthYearFormat = d3.timeFormat("%m/%Y");
+          const dateExtent = d3.extent(inputData, (d) => d.date);
+          const dateScale = d3
+            .scaleTime()
+            .domain(dateExtent)
+            .range([0, chartWidth]);
+          let bottomAxis = d3.axisBottom(dateScale).tickFormat(monthYearFormat);
+          let bottomGridlines = d3
+            .axisBottom(dateScale)
+            .tickSize(-chartHeight - 10)
+            .tickFormat("");
+          // clear previous x-axis and x-axis gridlines
+          annotations.selectAll(".x.axis").remove();
+          annotations.selectAll(".x.gridlines").remove();
+          annotations
+            .append("g")
+            .attr("class", "x axis")
+            .attr(
+              "transform",
+              `translate(${margins.left},${chartHeight + margins.top + 10})`
+            )
+            .call(bottomAxis);
+          annotations
+            .append("g")
+            .attr("class", "x gridlines")
+            .attr(
+              "transform",
+              `translate(${margins.left},${chartHeight + margins.top + 10})`
+            )
+            .call(bottomGridlines);
+
+          // line generator
+          var lineGen = d3
+            .line()
+            .x((d) => dateScale(d.date))
+            .y((d) => danceScale(d.danceability))
+            .curve(d3.curveMonotoneX);
+
+          chartArea
+            .selectAll(".line")
+            .data([inputData])
+            .join(
+              (enter) =>
+                enter
+                  .append("path")
+                  .attr("class", "line")
+                  .attr("fill", "none")
+                  .attr("stroke", "steelblue")
+                  .attr("stroke-width", 3)
+                  .attr("d", lineGen),
+              (update) => update.transition().duration(750).attr("d", lineGen),
+              (exit) => exit.remove()
+            );
+
+          // add circles
+          chartArea
+            .selectAll("circle")
+            .data(inputData, (d) => d.date)
+            .join(
+              (enter) =>
+                enter
+                  .append("circle")
+                  .attr("r", 3)
+                  .attr("fill", "navy")
+                  .attr("cx", (d) => dateScale(d.date))
+                  .attr("cy", (d) => danceScale(d.danceability))
+                  .attr("opacity", 0)
+                  .transition()
+                  .duration(750)
+                  .attr("opacity", 1),
+              (update) =>
+                update
+                  .transition()
+                  .duration(750)
+                  .attr("cx", (d) => dateScale(d.date))
+                  .attr("cy", (d) => danceScale(d.danceability)),
+              (exit) =>
+                exit.transition().duration(750).attr("opacity", 0).remove()
+            );
+        }
+        /* Function to flatten multiple years into a 1D array*/
+        intervalData = [];
+        function dataForInterval(start, end) {
+          intervalData = []; // Clear intervalData to start fresh
+          for (const yearStr of Object.keys(condensedData)) {
+            const year = Number(yearStr);
+            if (year >= start && year <= end) {
+              intervalData = intervalData.concat(condensedData[year]);
+            }
+          }
+        }
+
+        /* initial chart rendering*/
+        dataForInterval(startYear, endYear);
+        updateChart(intervalData);
       });
 
       //Nicole Bar Graph
@@ -169,7 +376,7 @@
       let barAnnotations = barSvg.append("g").attr("id", "barAnnotations");
 
       d3.csv("reid_final_data.csv").then((data) => {
-        const yearData = d3.group(data, (d) => d.ts.split('-')[0]); // group data by year
+        const yearData = d3.group(data, (d) => d.ts.split("-")[0]); // group data by year
 
         const yearSelect = d3.select("#yearSelect");
         yearSelect
@@ -216,7 +423,10 @@
           barAnnotations
             .append("g")
             .attr("class", "bar-axis x-axis")
-            .attr("transform", `translate(${barMargins.left},${barChartHeight + barMargins.top})`)
+            .attr(
+              "transform",
+              `translate(${barMargins.left},${barChartHeight + barMargins.top})`
+            )
             .call(bottomAxis)
             .selectAll("text")
             .style("text-anchor", "end")
@@ -228,7 +438,10 @@
           barAnnotations
             .append("g")
             .attr("class", "bar-axis y-axis")
-            .attr("transform", `translate(${barMargins.left},${barMargins.top})`)
+            .attr(
+              "transform",
+              `translate(${barMargins.left},${barMargins.top})`
+            )
             .call(leftAxis);
 
           // draw bars
@@ -249,7 +462,6 @@
         yearSelect.property("value", initialYear);
         updateBarChart(initialYear);
       });
-    
     </script>
   </body>
 </html>
