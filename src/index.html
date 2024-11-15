@@ -26,7 +26,7 @@
       <label for="yearSelect">Select Year: </label>
       <select id="yearSelect"></select>
     </div>
-    <svg id="barchart" height="500" width="1000"></svg>
+    <svg id="barchart" height="400" width="500"></svg>
     
     <script>
       const titleSvg = d3.select("svg#titleSvg");
@@ -152,24 +152,9 @@
           .attr("fill", "navy")
           .attr("cx", (d) => dateScale(d["ts"]))
           .attr("cy", (d) => danceScale(d["danceability"]));
-      });
 
-      //Nicole Bar Graph
-      const barSvg = d3.select("svg#barchart");
-      const barWidth = barSvg.attr("width");
-      const barHeight = barSvg.attr("height");
-      const barMargins = { top: 10, right: 30, bottom: 70, left: 70 };
-      const barChartWidth = barWidth - barMargins.left - barMargins.right;
-      const barChartHeight = barHeight - barMargins.top - barMargins.bottom;
-
-      let barChartArea = barSvg
-        .append("g")
-        .attr("transform", `translate(${barMargins.left},${barMargins.top})`);
-
-      let barAnnotations = barSvg.append("g").attr("id", "barAnnotations");
-
-      d3.csv("reid_final_data.csv").then((data) => {
-        const yearData = d3.group(data, (d) => d.ts.split('-')[0]); // group data by year
+        // BAR CHART
+        const yearData = d3.group(data, (d) => d3.timeFormat("%Y")(d.ts)); // group data by year
 
         const yearSelect = d3.select("#yearSelect");
         yearSelect
@@ -195,22 +180,22 @@
 
           const top5Songs = Array.from(songCounts)
             .sort((a, b) => b[1] - a[1])
-            .slice(0, 5);
-
-          const xScale = d3
-            .scaleBand()
-            .domain(top5Songs.map((d) => d[0]))
-            .range([0, barChartWidth])
-            .padding(0.2);
+            .slice(0, 10);
 
           const yScale = d3
+            .scaleBand()
+            .domain(top5Songs.map((d) => d[0]))
+            .range([0, barChartHeight])
+            .padding(0.2);
+
+          const xScale = d3
             .scaleLinear()
             .domain([0, d3.max(top5Songs, (d) => d[1])])
-            .nice()
-            .range([barChartHeight, 0]);
+            .range([0, barChartWidth]);
 
           barChartArea.selectAll("rect").remove();
           barAnnotations.selectAll(".bar-axis").remove();
+          barChartArea.selectAll(".bar-text").remove();
 
           let bottomAxis = d3.axisBottom(xScale);
           barAnnotations
@@ -218,18 +203,23 @@
             .attr("class", "bar-axis x-axis")
             .attr("transform", `translate(${barMargins.left},${barChartHeight + barMargins.top})`)
             .call(bottomAxis)
-            .selectAll("text")
-            .style("text-anchor", "end")
-            .attr("dx", "-0.8em")
-            .attr("dy", "0.15em")
-            .attr("transform", "rotate(-45)");
 
-          let leftAxis = d3.axisLeft(yScale);
+          barAnnotations
+            .append("text")
+            .text("Number of Listens")
+            .attr('transform', `translate(${barChartWidth / 2 + 15},${barChartHeight + barMargins.top + 45})`)
+
+          let leftAxis = d3.axisLeft(yScale).tickValues([]);
           barAnnotations
             .append("g")
             .attr("class", "bar-axis y-axis")
             .attr("transform", `translate(${barMargins.left},${barMargins.top})`)
             .call(leftAxis);
+
+          barAnnotations
+            .append('text')
+            .attr('transform', `translate(${margins.left - 45},${barChartHeight / 2 + barMargins.top + 20}) rotate(${-90})`)
+            .text('Song');
 
           // draw bars
           barChartArea
@@ -237,11 +227,29 @@
             .data(top5Songs)
             .enter()
             .append("rect")
-            .attr("x", (d) => xScale(d[0]))
-            .attr("y", (d) => yScale(d[1]))
-            .attr("width", xScale.bandwidth())
-            .attr("height", (d) => barChartHeight - yScale(d[1]))
-            .attr("fill", "steelblue");
+            .attr("y", (d) => yScale(d[0]))
+            // .attr("x", (d) => xScale(d[1]))
+            .attr("height", yScale.bandwidth())
+            // .attr("width", (d) => barChartWidth - xScale(d[1]))
+            .attr("width", (d) => xScale(d[1]))
+            .attr("fill", "steelblue")
+            .attr("opacity", 0.5)
+            // .append("g")
+            // .append("text")
+            // .attr("x", (d) => xScale(d[1]))
+            // .attr("y", (d) => yScale(d[0]))
+            // .text((d) => d[0])
+          
+          barChartArea.selectAll(".bar-text")
+            .data(top5Songs)
+            .join("text")
+            .attr("class", "bar-text")
+            .attr("x", 5)
+            .attr("y", (d) => yScale(d[0]) + 18)
+            .text((d) => d[0])
+            // .text(top5Songs.forEach((element, index) => { "index + .  + element[0]" }))
+                              
+            barChartArea.selectAll(".bar-text").raise()
         }
 
         // initialize bar chart with the first year
@@ -249,6 +257,20 @@
         yearSelect.property("value", initialYear);
         updateBarChart(initialYear);
       });
+
+      //Nicole Bar Graph
+      const barSvg = d3.select("svg#barchart");
+      const barWidth = barSvg.attr("width");
+      const barHeight = barSvg.attr("height");
+      const barMargins = { top: 10, right: 30, bottom: 70, left: 40 };
+      const barChartWidth = barWidth - barMargins.left - barMargins.right;
+      const barChartHeight = barHeight - barMargins.top - barMargins.bottom;
+
+      let barChartArea = barSvg
+        .append("g")
+        .attr("transform", `translate(${barMargins.left},${barMargins.top})`);
+
+      let barAnnotations = barSvg.append("g").attr("id", "barAnnotations");
     
     </script>
   </body>
