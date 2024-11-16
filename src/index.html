@@ -189,6 +189,16 @@
             .attr("transform", `translate(${margins.left - 10},${margins.top})`)
             .call(leftGridlines);
 
+          annotations
+            .append("text")
+            .attr(
+              "transform",
+              `translate(${margins.left - 45},${
+                chartHeight / 2 + margins.top + 20
+              }) rotate(${-90})`
+            )
+            .text(`${capitalizeFirstLetter(selectedMetric)}`);
+
           //  x axis - date
           /* abbreviated month-year format*/
           const monthYearFormat = d3.timeFormat("%b '%y");
@@ -226,6 +236,16 @@
               `translate(${margins.left},${chartHeight + margins.top + 10})`
             )
             .call(bottomGridlines);
+
+          annotations
+            .append("text")
+            .text("Dates")
+            .attr(
+              "transform",
+              `translate(${chartWidth / 2 + 15},${
+                chartHeight + margins.top + 45
+              })`
+            );
 
           // line generator
           var lineGen = d3
