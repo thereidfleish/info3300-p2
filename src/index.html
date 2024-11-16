@@ -97,7 +97,15 @@
       <label for="yearSelect">Select Year: </label>
       <select id="yearSelect"></select>
     </div>
-    <svg id="barchart" height="400" width="800"></svg>
+    <svg id="barchart" height="400" width="800">
+      <text
+        id="label"
+        x="590"
+        y="5"
+        text-anchor="end"
+        alignment-baseline="hanging"
+      ></text>
+    </svg>
 
     <script>
       /* Chart area */
@@ -637,6 +645,18 @@
           // .text(top5Songs.forEach((element, index) => { "index + .  + element[0]" }))
 
           barChartArea.selectAll(".bar-text").raise();
+          barChartArea
+            .selectAll(".bar-text")
+            .on("mouseover", function (event, d) {
+              const fullName = d[0];
+              console.log(`fullName: ${fullName}`);
+              d3.select("#label").text(fullName);
+              console.log("mouseover");
+            });
+          barChartArea.selectAll(".bar-text").on("mouseout", function () {
+            d3.select("#label").text("");
+            console.log("mouseout");
+          });
         }
 
         // initialize bar chart with the first year
