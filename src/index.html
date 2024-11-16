@@ -130,25 +130,40 @@
           d["ts"] = timeParser(d["ts"]);
         })
 
-        console.log(data)
-
-        const dataWithMetricsCols = data.map(function(d) { return {
-          ts: d.ts,
-          acousticness: d.acousticness,
-          danceability: d.danceability,
-          energy: d.energy
-        }})
-
-        console.log(dataWithMetricsCols)
-
         const yearData = d3.group(data, (d) => d3.timeFormat("%Y")(d.ts)); // group data by year
         console.log(yearData)
 
-        const monthlyMetrics = d3.rollup(dataWithMetricsCols, (v) => d3.mean(v), (d) => d3.timeFormat("%Y-%m")(d.ts)); // group data by year
+        const monthlyMetrics = d3.rollups(data,
+              x => ({
+            danceability: d3.mean(x, d => d.danceability),
+            energy: d3.mean(x, d => d.energy),
+            key: d3.mean(x, d => d.key),
+            loudness: d3.mean(x, d => d.loudness),
+            mode: d3.mean(x, d => d.mode),
+            speechiness: d3.mean(x, d => d.speechiness),
+            acousticness: d3.mean(x, d => d.acousticness),
+            instrumentalness: d3.mean(x, d => d.instrumentalness),
+            liveness: d3.mean(x, d => d.liveness),
+            valence: d3.mean(x, d => d.valence),
+            tempo: d3.mean(x, d => d.tempo),
+            duration_ms: d3.mean(x, d => d.duration_ms),
+            time_signature: d3.mean(x, d => d.time_signature),
+          }),
+        (d) => d3.timeFormat("%Y-%m")(d.ts)); // group data by year
         console.log(monthlyMetrics)
 
-        const monthData = d3.group(data, (d) => d3.timeFormat("%Y-%m")(d.ts)); // group data by year
-        console.log(monthData)
+        const timeParserForYearMonth = d3.timeParse("%Y-%m");
+        monthlyMetrics.forEach((d, i) => {
+          d[0] = timeParserForYearMonth(d[0]);
+        })
+
+        console.log(monthlyMetrics)
+
+        // const monthlyMetrics = d3.rollup(data,
+        // (v) => d3.mean(v, d => d.danceability),
+        // (d) => d3.timeFormat("%Y-%m")(d.ts)); // group data by year
+        // console.log(monthlyMetrics)
+
 
         // Step 1: Convert data to correct type + gather monthly data
         let monthlyData = {};
@@ -208,15 +223,15 @@
           // y axis - danceability
           console.log(inputData);
           console.log(metric);
-          const danceExtent = d3.extent(inputData, (d) => d[metric]);
-          const danceScale = d3
+          const metricExtent = d3.extent(inputData, (d) => d[1][metric]);
+          const metricScale = d3
             .scaleLinear()
-            .domain(danceExtent)
+            .domain(metricExtent)
             .range([chartHeight, 0]);
 
-          let leftAxis = d3.axisLeft(danceScale);
+          let leftAxis = d3.axisLeft(metricScale);
           let leftGridlines = d3
-            .axisLeft(danceScale)
+            .axisLeft(metricScale)
             .tickSize(-chartWidth - 10)
             .tickFormat("");
 
@@ -250,7 +265,7 @@
           //  x axis - date
           /* abbreviated month-year format*/
           const monthYearFormat = d3.timeFormat("%b '%y");
-          const dateExtent = d3.extent(inputData, (d) => d.date);
+          const dateExtent = d3.extent(inputData, (d) => d[0]);
           const dateScale = d3
             .scaleTime()
             .domain(dateExtent)
@@ -298,8 +313,8 @@
           // line generator
           var lineGen = d3
             .line()
-            .x((d) => dateScale(d.date))
-            .y((d) => danceScale(d[metric]))
+            .x((d) => dateScale(d[0]))
+            .y((d) => metricScale(d[1][metric]))
             .curve(d3.curveMonotoneX);
 
           chartArea
@@ -318,18 +333,20 @@
               (exit) => exit.remove()
             );
 
+            console.log("here")
+
           // add circles
           chartArea
             .selectAll("circle")
-            .data(inputData, (d) => d.date)
+            .data(inputData, (d) => d[0])
             .join(
               (enter) =>
                 enter
                   .append("circle")
                   .attr("r", 3)
                   .attr("fill", "navy")
-                  .attr("cx", (d) => dateScale(d.date))
-                  .attr("cy", (d) => danceScale(d[metric]))
+                  .attr("cx", (d) => dateScale(d[0]))
+                  .attr("cy", (d) => metricScale(d[1][metric]))
                   .attr("opacity", 0)
                   .transition()
                   .duration(750)
@@ -339,7 +356,7 @@
                   .transition()
                   .duration(750)
                   .attr("cx", (d) => dateScale(d.date))
-                  .attr("cy", (d) => danceScale(d[metric])),
+                  .attr("cy", (d) => metricScale(d[1][metric])),
               (exit) =>
                 exit.transition().duration(750).attr("opacity", 0).remove()
             );
@@ -509,7 +526,7 @@
         /* initial chart rendering*/
         dataForInterval(startYear, endYear);
         console.log(intervalData)
-        updateChart(intervalData, selectedMetric);
+        updateChart(monthlyMetrics, selectedMetric);
 
         // BAR CHART
 
