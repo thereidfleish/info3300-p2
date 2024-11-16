@@ -190,7 +190,6 @@
             .call(leftGridlines);
 
           //  x axis - date
-          // const monthYearFormat = d3.timeFormat("%m/%Y");
           /* abbreviated month-year format*/
           const monthYearFormat = d3.timeFormat("%b '%y");
           const dateExtent = d3.extent(inputData, (d) => d.date);
@@ -199,10 +198,7 @@
             .domain(dateExtent)
             .range([0, chartWidth]);
 
-          let bottomAxis = d3
-            .axisBottom(dateScale)
-            .ticks(10)
-            .tickFormat(monthYearFormat);
+          let bottomAxis = d3.axisBottom(dateScale).tickFormat(monthYearFormat);
           let bottomGridlines = d3
             .axisBottom(dateScale)
             .tickSize(-chartHeight - 10)
@@ -215,7 +211,12 @@
               "transform",
               `translate(${margins.left},${chartHeight + margins.top + 10})`
             )
-            .call(bottomAxis);
+            .call(bottomAxis)
+            .selectAll("text")
+            .each(function (_, i) {
+              if (i % 2 !== 0) d3.select(this).remove();
+            });
+          /* https://stackoverflow.com/questions/38921226/show-every-other-tick-label-on-d3-time-axis*/
 
           annotations
             .append("g")
