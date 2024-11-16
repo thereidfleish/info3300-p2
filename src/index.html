@@ -66,13 +66,29 @@
           style="margin-bottom: 50px"
         ></svg>
       </div>
-      <div style="flex-grow: 1">
+      <div style="flex-grow: 1; gap: 20px">
+        <!-- Select Metric -->
         <div>
           <label for="metricSelect">Select Metric: </label>
           <select id="metricSelect"></select>
         </div>
-        <div id="startWindowContainer" class="window-container"></div>
-        <div id="endWindowContainer" class="window-container"></div>
+
+        <!-- Instructions -->
+        <div id="instructions">
+          <p>
+            <strong>Instructions:</strong><br />
+            Select the <u>start</u> and <u>end</u> of the interval. <br />
+            The start cannot go below <b>2015</b>, and the end cannot go above
+            <b>2024</b>.
+          </p>
+        </div>
+
+        <!-- Start and End Windows -->
+        <div>
+          <div id="startWindowContainer" class="window-container"></div>
+          <div id="endWindowContainer" class="window-container"></div>
+        </div>
+        <br />
       </div>
     </div>
 
