@@ -592,22 +592,48 @@
             .attr("class", "bar-text")
             .attr("x", 5)
             .attr("y", (d) => yScale(d[0]) + 18)
-            // .text((d) => {
-            //   let name = d[0];
-            //   const threshold = 60;
-            //   if (name.length > threshold) {
-            //     /* only keep substring of name bounded by last space within `threshold` char*/
-            //     console.log(`original length: ${name.length}`);
-            //     let truncated = name.substring(0, threshold);
-            //     let lastSpace = truncated.lastIndexOf(" ");
-            //     truncated = truncated.substring(0, lastSpace);
-            //     let result = truncated + "...";
-            //     console.log(`length: ${result.length}`);
-            //     return result;
-            //   }
-            //   return name;
-            // });
-            .text((d) => d[0]);
+            .text((d) => {
+              const name = d[0];
+              const count = d[1];
+              const barWidth = xScale(count);
+
+              // Temporary text element to measure width
+              const tempText = barSvg
+                .append("text")
+                .text(name)
+                .style("visibility", "hidden");
+
+              /* https://stackoverflow.com/questions/21990857/d3-js-how-to-get-the-computed-width-and-height-for-an-arbitrary-element */
+              let textWidth = tempText.node().getBBox().width;
+              tempText.remove();
+
+              if (textWidth > barWidth - 10) {
+                let truncated = name;
+
+                while (textWidth > barWidth - 10) {
+                  const lastSpace = truncated.lastIndexOf(" ");
+                  if (lastSpace === -1) break; // No spaces left, stop truncating
+
+                  // Remove last word
+                  truncated = truncated.substring(0, lastSpace);
+
+                  // Recalculate width
+                  const tempText = barSvg
+                    .append("text")
+                    .text(truncated + "...")
+                    .style("visibility", "hidden");
+
+                  textWidth = tempText.node().getBBox().width;
+                  tempText.remove();
+                }
+
+                return truncated + "...";
+              }
+
+              return name; // No truncation needed
+            });
+
+          // .text((d) => d[0]);
           // .text(top5Songs.forEach((element, index) => { "index + .  + element[0]" }))
 
           barChartArea.selectAll(".bar-text").raise();
