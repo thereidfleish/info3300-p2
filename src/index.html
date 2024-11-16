@@ -588,7 +588,22 @@
             .attr("class", "bar-text")
             .attr("x", 5)
             .attr("y", (d) => yScale(d[0]) + 18)
-            .text((d) => d[0]);
+            .text((d) => {
+              let name = d[0];
+              const threshold = 60;
+              if (name.length > threshold) {
+                /* only keep substring of name bounded by last space within `threshold` char*/
+                console.log(`original length: ${name.length}`);
+                let truncated = name.substring(0, threshold);
+                let lastSpace = truncated.lastIndexOf(" ");
+                truncated = truncated.substring(0, lastSpace);
+                let result = truncated + "...";
+                console.log(`length: ${result.length}`);
+                return result;
+              }
+              return name;
+            });
+          // .text((d) => d[0]);
           // .text(top5Songs.forEach((element, index) => { "index + .  + element[0]" }))
 
           barChartArea.selectAll(".bar-text").raise();
