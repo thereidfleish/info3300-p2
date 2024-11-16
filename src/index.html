@@ -126,12 +126,36 @@
       d3.csv("reid_final_data.csv").then((data) => {
         const timeParser = d3.timeParse("%Y-%m-%d %H:%M:%S%Z");
 
+        data.forEach((d, i) => {
+          d["ts"] = timeParser(d["ts"]);
+        })
+
+        console.log(data)
+
+        const dataWithMetricsCols = data.map(function(d) { return {
+          ts: d.ts,
+          acousticness: d.acousticness,
+          danceability: d.danceability,
+          energy: d.energy
+        }})
+
+        console.log(dataWithMetricsCols)
+
+        const yearData = d3.group(data, (d) => d3.timeFormat("%Y")(d.ts)); // group data by year
+        console.log(yearData)
+
+        const monthlyMetrics = d3.rollup(dataWithMetricsCols, (v) => d3.mean(v), (d) => d3.timeFormat("%Y-%m")(d.ts)); // group data by year
+        console.log(monthlyMetrics)
+
+        const monthData = d3.group(data, (d) => d3.timeFormat("%Y-%m")(d.ts)); // group data by year
+        console.log(monthData)
+
         // Step 1: Convert data to correct type + gather monthly data
         let monthlyData = {};
         data.forEach((d, i) => {
           d["danceability"] = Number(d["danceability"]);
           d["energy"] = Number(d["energy"]);
-          d["ts"] = timeParser(d["ts"]);
+          // d["ts"] = timeParser(d["ts"]);
 
           const month = d["ts"].getMonth();
           const year = d["ts"].getFullYear();
@@ -484,10 +508,11 @@
 
         /* initial chart rendering*/
         dataForInterval(startYear, endYear);
+        console.log(intervalData)
         updateChart(intervalData, selectedMetric);
 
         // BAR CHART
-        const yearData = d3.group(data, (d) => d3.timeFormat("%Y")(d.ts)); // group data by year
+
 
         const yearSelect = d3.select("#yearSelect");
         yearSelect
