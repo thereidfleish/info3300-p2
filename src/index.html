@@ -157,70 +157,7 @@
           d[0] = timeParserForYearMonth(d[0]);
         })
 
-        console.log(monthlyMetrics)
-
-        // const monthlyMetrics = d3.rollup(data,
-        // (v) => d3.mean(v, d => d.danceability),
-        // (d) => d3.timeFormat("%Y-%m")(d.ts)); // group data by year
-        // console.log(monthlyMetrics)
-
-
-        // Step 1: Convert data to correct type + gather monthly data
-        let monthlyData = {};
-        data.forEach((d, i) => {
-          d["danceability"] = Number(d["danceability"]);
-          d["energy"] = Number(d["energy"]);
-          // d["ts"] = timeParser(d["ts"]);
-
-          const month = d["ts"].getMonth();
-          const year = d["ts"].getFullYear();
-          const currEnergy = d["energy"];
-          const currDance = d["danceability"];
-
-          /* if year not in dictionary (null), initialize as empty obj */
-          if (!monthlyData[year]) {
-            monthlyData[year] = {};
-          }
-
-          /* Only initialize the month if it has data */
-          if (!monthlyData[year][month]) {
-            monthlyData[year][month] = {
-              count: 0,
-              energySum: 0,
-              danceSum: 0,
-            };
-          }
-
-          monthlyData[year][month].count += 1;
-          monthlyData[year][month].energySum += currEnergy;
-          monthlyData[year][month].danceSum += currDance;
-        });
-
-        // Step 2: Calculate averages and create condensedData
-        let condensedData = {};
-        for (const year in monthlyData) {
-          condensedData[year] = [];
-
-          for (const month in monthlyData[year]) {
-            const monthData = monthlyData[year][month];
-
-            if (monthData.count > 0) {
-              const date = new Date(year, month);
-
-              condensedData[year].push({
-                date: date,
-                danceability: monthData.danceSum / monthData.count,
-                energy: monthData.energySum / monthData.count,
-              });
-            }
-          }
-        }
-
-        console.log("condensedData:");
-        console.log(condensedData);
-
         function updateChart(inputData, metric) {
-          // y axis - danceability
           console.log(inputData);
           console.log(metric);
           const metricExtent = d3.extent(inputData, (d) => d[1][metric]);
@@ -394,16 +331,26 @@
         /* Function to flatten multiple years into a 1D array*/
         intervalData = [];
         function dataForInterval(start, end) {
+          const timeParserForYear = d3.timeParse("%Y");
+          start = timeParserForYear(start)
+          end = timeParserForYear(end)
+          console.log(start)
+          console.log(end)
+
+          return monthlyMetrics.filter( (d) => {
+            return d[0] >= start && d[0] <= end // ADD ONE YEAR
+          }  )
           // Clear intervalData to start fresh
-          intervalData = [];
+          // intervalData = [];
+          // console.log(monthlyMetrics)
 
-          for (const yearStr of Object.keys(condensedData)) {
-            const year = Number(yearStr);
+          // for (const yearStr of Object.keys(monthlyMetrics)) {
+          //   const year = Number(yearStr);
 
-            if (year >= start && year <= end) {
-              intervalData = intervalData.concat(condensedData[year]);
-            }
-          }
+          //   if (year >= start && year <= end) {
+          //     intervalData = intervalData.concat(condensedData[year]);
+          //   }
+          // }
         }
 
         const metricSelect = d3.select("#metricSelect");
@@ -420,7 +367,7 @@
         metricSelect.on("change", function () {
           selectedMetric = this.value;
 
-          updateChart(intervalData, selectedMetric);
+          updateChart(dataForInterval(startYear, endYear), selectedMetric);
         });
 
         /*  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
@@ -474,8 +421,7 @@
               /* reset interval data*/
               console.log("Start window increment");
               console.log(`start year: ${startYear}`);
-              dataForInterval(startYear, endYear);
-              updateChart(intervalData, selectedMetric);
+              updateChart(dataForInterval(startYear, endYear), selectedMetric);
             }
           },
           () => {
@@ -484,8 +430,7 @@
               updateDisplay(d3.select("#startWindowContainer"), startYear);
               console.log("Start window decrement");
               console.log(`start year: ${startYear}`);
-              dataForInterval(startYear, endYear);
-              updateChart(intervalData, selectedMetric);
+              updateChart(dataForInterval(startYear, endYear), selectedMetric);
             }
           }
         );
@@ -500,8 +445,7 @@
               updateDisplay(d3.select("#endWindowContainer"), endYear);
               console.log("End window increment");
               console.log(`end year: ${endYear}`);
-              dataForInterval(startYear, endYear);
-              updateChart(intervalData, selectedMetric);
+              updateChart(dataForInterval(startYear, endYear), selectedMetric);
             }
           },
           () => {
@@ -510,8 +454,7 @@
               updateDisplay(d3.select("#endWindowContainer"), endYear);
               console.log("End window decrement");
               console.log(`end year: ${endYear}`);
-              dataForInterval(startYear, endYear);
-              updateChart(intervalData, selectedMetric);
+              updateChart(dataForInterval(startYear, endYear), selectedMetric);
             }
           }
         );
