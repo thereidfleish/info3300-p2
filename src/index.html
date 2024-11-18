@@ -97,15 +97,25 @@
       <label for="yearSelect">Select Year: </label>
       <select id="yearSelect"></select>
     </div>
-    <svg id="barchart" height="400" width="800">
-      <text
-        id="label"
-        x="590"
-        y="5"
-        text-anchor="end"
-        alignment-baseline="hanging"
-      ></text>
-    </svg>
+    <div class="flex-container padding">
+      <div style="padding-top: 15px">
+        <!-- Bar chart -->
+        <svg id="barchart" height="450" width="800">
+          <text
+            id="label"
+            x="700"
+            y="0"
+            text-anchor="end"
+            alignment-baseline="hanging"
+          ></text>
+        </svg>
+      </div>
+      <!-- Instructions -->
+      <div style="margin-left: 20px; max-width: 200px">
+        <h4>Instructions:</h4>
+        <p>Hover over a bar to see the full track name.</p>
+      </div>
+    </div>
 
     <script>
       /* Chart area */
@@ -128,34 +138,36 @@
 
         data.forEach((d, i) => {
           d["ts"] = timeParser(d["ts"]);
-        })
+        });
 
         const yearData = d3.group(data, (d) => d3.timeFormat("%Y")(d.ts)); // group data by year
-        console.log(yearData)
+        console.log(yearData);
 
-        const monthlyMetrics = d3.rollups(data,
-              x => ({
-            danceability: d3.mean(x, d => d.danceability),
-            energy: d3.mean(x, d => d.energy),
-            key: d3.mean(x, d => d.key),
-            loudness: d3.mean(x, d => d.loudness),
-            mode: d3.mean(x, d => d.mode),
-            speechiness: d3.mean(x, d => d.speechiness),
-            acousticness: d3.mean(x, d => d.acousticness),
-            instrumentalness: d3.mean(x, d => d.instrumentalness),
-            liveness: d3.mean(x, d => d.liveness),
-            valence: d3.mean(x, d => d.valence),
-            tempo: d3.mean(x, d => d.tempo),
-            duration_ms: d3.mean(x, d => d.duration_ms),
-            time_signature: d3.mean(x, d => d.time_signature),
+        const monthlyMetrics = d3.rollups(
+          data,
+          (x) => ({
+            danceability: d3.mean(x, (d) => d.danceability),
+            energy: d3.mean(x, (d) => d.energy),
+            key: d3.mean(x, (d) => d.key),
+            loudness: d3.mean(x, (d) => d.loudness),
+            mode: d3.mean(x, (d) => d.mode),
+            speechiness: d3.mean(x, (d) => d.speechiness),
+            acousticness: d3.mean(x, (d) => d.acousticness),
+            instrumentalness: d3.mean(x, (d) => d.instrumentalness),
+            liveness: d3.mean(x, (d) => d.liveness),
+            valence: d3.mean(x, (d) => d.valence),
+            tempo: d3.mean(x, (d) => d.tempo),
+            duration_ms: d3.mean(x, (d) => d.duration_ms),
+            time_signature: d3.mean(x, (d) => d.time_signature),
           }),
-        (d) => d3.timeFormat("%Y-%m")(d.ts)); // group data by year
-        console.log(monthlyMetrics)
+          (d) => d3.timeFormat("%Y-%m")(d.ts)
+        ); // group data by year
+        console.log(monthlyMetrics);
 
         const timeParserForYearMonth = d3.timeParse("%Y-%m");
         monthlyMetrics.forEach((d, i) => {
           d[0] = timeParserForYearMonth(d[0]);
-        })
+        });
 
         function updateChart(inputData, metric) {
           console.log(inputData);
@@ -270,7 +282,7 @@
               (exit) => exit.remove()
             );
 
-            console.log("here")
+          console.log("here");
 
           // add circles
           chartArea
@@ -332,14 +344,14 @@
         intervalData = [];
         function dataForInterval(start, end) {
           const timeParserForYear = d3.timeParse("%Y");
-          start = timeParserForYear(start)
-          end = timeParserForYear(end)
-          console.log(start)
-          console.log(end)
+          start = timeParserForYear(start);
+          end = timeParserForYear(end);
+          console.log(start);
+          console.log(end);
 
-          return monthlyMetrics.filter( (d) => {
-            return d[0] >= start && d[0] <= end // ADD ONE YEAR
-          }  )
+          return monthlyMetrics.filter((d) => {
+            return d[0] >= start && d[0] <= end; // ADD ONE YEAR
+          });
           // Clear intervalData to start fresh
           // intervalData = [];
           // console.log(monthlyMetrics)
@@ -468,11 +480,10 @@
 
         /* initial chart rendering*/
         dataForInterval(startYear, endYear);
-        console.log(intervalData)
+        console.log(intervalData);
         updateChart(monthlyMetrics, selectedMetric);
 
         // BAR CHART
-
 
         const yearSelect = d3.select("#yearSelect");
         yearSelect
@@ -654,7 +665,7 @@
       const barSvg = d3.select("svg#barchart");
       const barWidth = barSvg.attr("width");
       const barHeight = barSvg.attr("height");
-      const barMargins = { top: 10, right: 30, bottom: 70, left: 40 };
+      const barMargins = { top: 40, right: 30, bottom: 70, left: 40 };
       const barChartWidth = barWidth - barMargins.left - barMargins.right;
       const barChartHeight = barHeight - barMargins.top - barMargins.bottom;
 
