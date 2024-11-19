@@ -411,21 +411,23 @@
 
 
         // BAR CHART
+        const selectorOptions = Array.from(yearData.keys())
+          console.log(selectorOptions)
+          selectorOptions.push("All-Time")
+          console.log(selectorOptions)
 
         const yearSelect = d3.select("#yearSelect");
         yearSelect
           .selectAll("option")
           .data(
-            Array.from(yearData.keys()).sort(function (a, b) {
-              return b - a;
-            })
+            selectorOptions
           )
           .enter()
           .append("option")
           .text((d) => d)
           .attr("value", (d) => d);
 
-        yearSelect.on("change", function () {
+          yearSelect.on("change", function () {
           const selectedYear = this.value;
 
           updateBarChart("Songs", "track", "songLabel", selectedYear)
@@ -449,12 +451,20 @@
 
           let barAnnotations = barSvg.append("g").attr("id", "barAnnotations");
 
-          const filteredData = yearData.get(year) || [];
+          var filteredData = data
+          if (year !== "All-Time") {
+            filteredData = yearData.get(year);
+          }
+
+          console.log(filteredData)
+           
           const counts = d3.rollup(
             filteredData,
             (v) => v.length,
             (d) => d[variable]
           );
+
+          
 
           const top10 = Array.from(counts)
             .sort((a, b) => b[1] - a[1])
@@ -491,7 +501,7 @@
             .text("Number of Listens")
             .attr(
               "transform",
-              `translate(${barChartWidth / 2 + 15},${barChartHeight + barMargins.top + 45
+              `translate(${barChartWidth / 2},${barChartHeight + barMargins.top + 45
               })`
             );
 
