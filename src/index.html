@@ -149,8 +149,14 @@
             tempo: d3.mean(x, d => d.tempo),
             duration_ms: d3.mean(x, d => d.duration_ms),
             time_signature: d3.mean(x, d => d.time_signature),
+            plays: x.length
           }),
-          (d) => d3.timeFormat("%Y-%m")(d.ts)); // group data by month/year
+          (d) => d3.timeFormat("%Y-%m")(d.ts),
+          (d) => d.track,
+          (d) => d.artist,
+          (d) => d.album
+        
+        ); // group data by month/year
         console.log(monthlyMetrics)
 
         const timeParserForYearMonth = d3.timeParse("%Y-%m");
