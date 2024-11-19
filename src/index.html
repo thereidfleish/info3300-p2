@@ -55,7 +55,7 @@
 <body>
   <div class="container-fluid">
     <h1>Reid's Spotify Stats</h1>
-    <h2>Listening Trends</h2>
+    <h2>Listening Patterns</h2>
     <div class="row">
       <div class="col">
         <!-- Select Metric -->
@@ -150,7 +150,7 @@
             duration_ms: d3.mean(x, d => d.duration_ms),
             time_signature: d3.mean(x, d => d.time_signature),
           }),
-          (d) => d3.timeFormat("%Y-%m")(d.ts)); // group data by year
+          (d) => d3.timeFormat("%Y-%m")(d.ts)); // group data by month/year
         console.log(monthlyMetrics)
 
         const timeParserForYearMonth = d3.timeParse("%Y-%m");
@@ -268,8 +268,6 @@
               update => update.call(update => update.transition().duration(750).attr("d", lineGen)),
               exit => exit.call(exit => exit.transition().duration(750).attr("opacity", 0).remove())
             );
-
-          console.log("here")
 
           // add circles
           chartArea
@@ -429,10 +427,15 @@
 
           yearSelect.on("change", function () {
           const selectedYear = this.value;
+          startYear = selectedYear
+          endYear = selectedYear
 
           updateBarChart("Songs", "track", "songLabel", selectedYear)
           updateBarChart("Artists", "artist", "artistLabel", selectedYear)
           updateBarChart("Albums", "album", "albumLabel", selectedYear)
+          updateChart(dataForInterval(selectedYear, selectedYear), selectedMetric);
+          updateDisplay(d3.select("#startWindowContainer"), selectedYear);
+          updateDisplay(d3.select("#endWindowContainer"), selectedYear);
         });
 
         function updateBarChart(selector, variable, label, year) {
