@@ -19,6 +19,10 @@
       font-weight: bold;
     }
 
+    .underline {
+      text-decoration-line: underline;
+    }
+
     .padding {
       margin-left: 5;
       margin-right: 5;
@@ -55,57 +59,64 @@
 <body>
   <div class="container-fluid">
     <h1>Reid's Spotify Stats</h1>
-    <h2>Listening Patterns</h2>
     <div class="row">
-      <div class="col">
-        <!-- Select Metric -->
-        <div>
-          <label for="metricSelect" class="bold">Select Metric: </label>
-          <select id="metricSelect"></select>
-          <p class="pt-4 bold"> Select the <u>start</u> and <u>end</u> of the interval (2015-2024).</p>
-        </div>
+      <div class="col-2">
+        <div class="sticky-top pt-2">
+          <div>
+            <label class="bold" for="yearSelect">Select a Year: </label>
+            <select id="yearSelect"></select>
+            <p class="pt-2 bold">Or select an interval:</p>
+            <div id="startWindowContainer" class="window-container"></div>
+            <div id="endWindowContainer" class="window-container"></div>
+          </div>
 
-        <!-- Start and End Windows -->
-        <div>
-          <div id="startWindowContainer" class="window-container"></div>
-          <div id="endWindowContainer" class="window-container"></div>
+          <div class="py-3">
+            <label for="metricSelect" class="bold">Select Metric: </label>
+            <select id="metricSelect"></select>
+          </div>
+
+          <div>
+            <p class="bold">Displaying:</p>
+            <p class="underline" id="TotalSongsNum"></p>
+            <p id="SongsNum"></p>
+            <p id="ArtistsNum"></p>
+            <p id="AlbumsNum"></p>
+          </div>
         </div>
-        <br />
       </div>
+
       <div class="col">
+        <h2>Listening Patterns</h2>
         <h3 id="metricsChartTitle"></h3>
         <p id="metricsChartDesc"></p>
         <svg id="lineplot" height="500" width="1000"></svg>
+
+        <h2>Top Songs, Artists, and Albums</h2>
+        <p class="pt-2">Hover over a bar to see the full name.</p>
+        <div class="row">
+          <div class="col">
+            <h3>Top Songs</h3>
+            <svg id="Songs" height="400" width="500">
+              <text id="songLabel" x="500" y="0" text-anchor="end" alignment-baseline="hanging"></text>
+            </svg>
+          </div>
+
+          <div class="col">
+            <h3>Top Artists</h3>
+            <svg id="Artists" height="400" width="500">
+              <text id="artistLabel" x="500" y="0" text-anchor="end" alignment-baseline="hanging"></text>
+            </svg>
+          </div>
+
+          <div class="col">
+            <h3>Top Albums</h3>
+            <svg id="Albums" height="400" width="500">
+              <text id="albumLabel" x="500" y="0" text-anchor="end" alignment-baseline="hanging"></text>
+            </svg>
+          </div>
+        </div>
       </div>
     </div>
-
-    <h2>Top Songs, Artists, and Albums</h2>
-    <label class="bold" for="yearSelect">Select Year: </label>
-    <select id="yearSelect"></select>
-    <p class="pt-2">Hover over a bar to see the full name.</p>
-    <div class="row">
-      <div class="col">
-        <h3>Top Songs</h3>
-        <svg id="Songs" height="400" width="500">
-          <text id="songLabel" x="500" y="0" text-anchor="end" alignment-baseline="hanging"></text>
-        </svg>
-      </div>
-
-      <div class="col">
-        <h3>Top Artists</h3>
-        <svg id="Artists" height="400" width="500">
-          <text id="artistLabel" x="500" y="0" text-anchor="end" alignment-baseline="hanging"></text>
-        </svg>
-      </div>
-
-      <div class="col">
-        <h3>Top Albums</h3>
-        <svg id="Albums" height="400" width="500">
-          <text id="albumLabel" x="500" y="0" text-anchor="end" alignment-baseline="hanging"></text>
-        </svg>
-      </div>
-    </div>
-
 
     <script>
       /* Chart area */
@@ -147,16 +158,12 @@
             liveness: d3.mean(x, d => d.liveness),
             valence: d3.mean(x, d => d.valence),
             tempo: d3.mean(x, d => d.tempo),
-            duration_ms: d3.mean(x, d => d.duration_ms),
+            "Song Duration": d3.mean(x, d => d.duration_ms) / 60000,
             time_signature: d3.mean(x, d => d.time_signature),
-            plays: x.length
+            "Number of Songs Listened To": x.length,
+            "Total Listening Time": d3.sum(x, d => d.ms_played) / 60000,
           }),
-          (d) => d3.timeFormat("%Y-%m")(d.ts),
-          (d) => d.track,
-          (d) => d.artist,
-          (d) => d.album
-        
-        ); // group data by month/year
+          (d) => d3.timeFormat("%Y-%m")(d.ts)); // group data by month/year
         console.log(monthlyMetrics)
 
         const timeParserForYearMonth = d3.timeParse("%Y-%m");
@@ -287,7 +294,7 @@
 
           d3.csv("metric_defs.csv").then((data) => {
             document.getElementById("metricsChartTitle").innerHTML = `Average ${capitalizeFirstLetter(selectedMetric)} Patterns`
-            document.getElementById("metricsChartDesc").innerHTML = `${data[0][selectedMetric]}  Shown here are the trends in average ${capitalizeFirstLetter(selectedMetric)} levels of songs Reid listened to over the time period.`
+            document.getElementById("metricsChartDesc").innerHTML = `${data[0][selectedMetric]}  Shown here are the trends in average ${capitalizeFirstLetter(selectedMetric)} of songs Reid listened to over the time period.`
           })
 
 
@@ -305,10 +312,12 @@
           })
         }
 
+        
         const metricSelect = d3.select("#metricSelect");
         metricSelect
           .selectAll("option")
-          .data(Array.from(["danceability", "energy", "key", "loudness", "mode", "speechiness", "acousticness", "instrumentalness", "liveness", "valence", "tempo", "duration_ms", "time_signature"]))
+          // .data(Array.from(["danceability", "energy", "key", "loudness", "mode", "speechiness", "acousticness", "instrumentalness", "liveness", "valence", "tempo", "duration_ms", "time_signature", "num_listens"]))
+          .data(Object.keys(monthlyMetrics[0][1]))
           .enter()
           .append("option")
           .text((d) => d)
@@ -371,6 +380,7 @@
               startYear++;
               updateDisplay(d3.select("#startWindowContainer"), startYear);
               updateChart(dataForInterval(startYear, endYear), selectedMetric);
+              updateBarCharts();
             }
           },
           () => {
@@ -378,6 +388,7 @@
               startYear--;
               updateDisplay(d3.select("#startWindowContainer"), startYear);
               updateChart(dataForInterval(startYear, endYear), selectedMetric);
+              updateBarCharts();
             }
           }
         );
@@ -391,6 +402,7 @@
               endYear++;
               updateDisplay(d3.select("#endWindowContainer"), endYear);
               updateChart(dataForInterval(startYear, endYear), selectedMetric);
+              updateBarCharts();
             }
           },
           () => {
@@ -398,6 +410,7 @@
               endYear--;
               updateDisplay(d3.select("#endWindowContainer"), endYear);
               updateChart(dataForInterval(startYear, endYear), selectedMetric);
+              updateBarCharts();
             }
           }
         );
@@ -416,9 +429,9 @@
 
         // BAR CHART
         const selectorOptions = Array.from(yearData.keys())
-          console.log(selectorOptions)
-          selectorOptions.push("All-Time")
-          console.log(selectorOptions)
+        console.log(selectorOptions)
+        selectorOptions.push("All-Time")
+        console.log(selectorOptions)
 
         const yearSelect = d3.select("#yearSelect");
         yearSelect
@@ -431,17 +444,22 @@
           .text((d) => d)
           .attr("value", (d) => d);
 
-          yearSelect.on("change", function () {
+        yearSelect.on("change", function () {
           const selectedYear = this.value;
           startYear = selectedYear
           endYear = selectedYear
+          if (selectedYear === "All-Time") {
+            startYear = 2015
+            endYear = 2024
+          }
+
 
           updateBarChart("Songs", "track", "songLabel", selectedYear)
           updateBarChart("Artists", "artist", "artistLabel", selectedYear)
           updateBarChart("Albums", "album", "albumLabel", selectedYear)
-          updateChart(dataForInterval(selectedYear, selectedYear), selectedMetric);
-          updateDisplay(d3.select("#startWindowContainer"), selectedYear);
-          updateDisplay(d3.select("#endWindowContainer"), selectedYear);
+          updateChart(dataForInterval(startYear, endYear), selectedMetric);
+          updateDisplay(d3.select("#startWindowContainer"), startYear);
+          updateDisplay(d3.select("#endWindowContainer"), endYear);
         });
 
         function updateBarChart(selector, variable, label, year) {
@@ -460,24 +478,35 @@
 
           let barAnnotations = barSvg.append("g").attr("id", "barAnnotations");
 
+          console.log(startYear)
+
           var filteredData = data
           if (year !== "All-Time") {
-            filteredData = yearData.get(year);
+            filteredData = Array.from(yearData)
+              .filter(([year]) => year >= startYear && year <= endYear)
+              .flatMap(([, songs]) => songs);
           }
 
           console.log(filteredData)
-           
+
           const counts = d3.rollup(
             filteredData,
             (v) => v.length,
             (d) => d[variable]
           );
 
-          
+          console.log(counts)
+          console.log(Array.from(counts).length)
+          console.log(`${selector}Num`)
+
+          document.getElementById("TotalSongsNum").innerHTML = `${filteredData.length} Total Songs`
+          document.getElementById(`${selector}Num`).innerHTML = `${Array.from(counts).length} Unique ${selector}`
 
           const top10 = Array.from(counts)
             .sort((a, b) => b[1] - a[1])
             .slice(0, 10);
+
+          console.log(top10)
 
           const yScale = d3
             .scaleBand()
@@ -605,15 +634,14 @@
           });
         }
 
+        function updateBarCharts(init) {
+          updateBarChart("Songs", "track", "songLabel", init)
+          updateBarChart("Artists", "artist", "artistLabel", init)
+          updateBarChart("Albums", "album", "albumLabel", init)
+        }
 
+        updateBarCharts("All-Time")
 
-        // initialize bar chart with the first year
-        const initialYear = Array.from(yearData.keys())[0];
-        yearSelect.property("value", initialYear);
-
-        updateBarChart("Songs", "track", "songLabel", initialYear)
-        updateBarChart("Artists", "artist", "artistLabel", initialYear)
-        updateBarChart("Albums", "album", "albumLabel", initialYear)
       });
 
 
