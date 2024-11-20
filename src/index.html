@@ -23,11 +23,6 @@
       text-decoration-line: underline;
     }
 
-    .padding {
-      margin-left: 5;
-      margin-right: 5;
-    }
-
     .window-container {
       display: inline-block;
       text-align: center;
@@ -35,9 +30,9 @@
 
     .window-display {
       padding: 10px;
-      border: 1px solid #ccc;
+      border: 1px solid #1DB954;
       user-select: none;
-      background-color: #f9f9f9;
+      background-color: f9f9f9;
       border-radius: 5px;
       margin-bottom: 5px;
     }
@@ -47,11 +42,11 @@
       margin: 2px;
       cursor: pointer;
       border-radius: 5px;
-      background-color: #ccc;
+      background-color: #1DB954;
     }
 
     .button:active {
-      background-color: #aaa;
+      background-color: green;
     }
   </style>
 </head>
@@ -71,7 +66,7 @@
           </div>
 
           <div class="py-3">
-            <label for="metricSelect" class="bold">Select Metric: </label>
+            <label class="pb-2 bold" for="metricSelect">Select Metric: </label>
             <select id="metricSelect"></select>
           </div>
 
@@ -119,8 +114,7 @@
     </div>
 
     <script>
-      /* Chart area */
-
+      // Line Plot
       const svg = d3.select("svg#lineplot");
       const width = svg.attr("width");
       const height = svg.attr("height");
@@ -135,7 +129,6 @@
       let colorScale = d3.scaleOrdinal(d3.schemeCategory10);
 
       d3.csv("reid_final_data.csv").then((data) => {
-
         const timeParser = d3.timeParse("%Y-%m-%d %H:%M:%S%Z");
 
         data.forEach((d, i) => {
@@ -143,23 +136,22 @@
         })
 
         const yearData = d3.group(data, (d) => d3.timeFormat("%Y")(d.ts)); // group data by year
-        console.log(yearData)
 
         const monthlyMetrics = d3.rollups(data,
           x => ({
-            danceability: d3.mean(x, d => d.danceability),
-            energy: d3.mean(x, d => d.energy),
-            key: d3.mean(x, d => d.key),
-            loudness: d3.mean(x, d => d.loudness),
-            mode: d3.mean(x, d => d.mode),
-            speechiness: d3.mean(x, d => d.speechiness),
-            acousticness: d3.mean(x, d => d.acousticness),
-            instrumentalness: d3.mean(x, d => d.instrumentalness),
-            liveness: d3.mean(x, d => d.liveness),
-            valence: d3.mean(x, d => d.valence),
-            tempo: d3.mean(x, d => d.tempo),
+            "Danceability": d3.mean(x, d => d.danceability),
+            "Energy": d3.mean(x, d => d.energy),
+            "Key": d3.mean(x, d => d.key),
+            "Loudness": d3.mean(x, d => d.loudness),
+            "Mode": d3.mean(x, d => d.mode),
+            "Speechiness": d3.mean(x, d => d.speechiness),
+            "Acousticness": d3.mean(x, d => d.acousticness),
+            "Instrumentalness": d3.mean(x, d => d.instrumentalness),
+            "Liveness": d3.mean(x, d => d.liveness),
+            "Valence": d3.mean(x, d => d.valence),
+            "Tempo": d3.mean(x, d => d.tempo),
+            "Time Signature": d3.mean(x, d => d.time_signature),
             "Song Duration": d3.mean(x, d => d.duration_ms) / 60000,
-            time_signature: d3.mean(x, d => d.time_signature),
             "Number of Songs Listened To": x.length,
             "Total Listening Time": d3.sum(x, d => d.ms_played) / 60000,
           }),
@@ -191,6 +183,7 @@
           d3.select("#lineplot").selectAll("path").remove();
           d3.select("#lineplot").selectAll("circle").remove();
 
+          // y axis - metric
           annotations
             .append("g")
             .attr("class", "y axis")
@@ -210,7 +203,7 @@
               `translate(${margins.left - 57},${chartHeight / 2 + margins.top + 20
               }) rotate(${-90})`
             )
-            .text(`${capitalizeFirstLetter(selectedMetric)}`);
+            .text(selectedMetric);
 
           //  x axis - date
           /* abbreviated month-year format*/
@@ -269,18 +262,12 @@
           chartArea
             .selectAll(".line")
             .data([inputData])
-            .join(
-              (enter) =>
-                enter
-                  .append("path")
-                  .attr("class", "line")
-                  .attr("fill", "none")
-                  .attr("stroke", "steelblue")
-                  .attr("stroke-width", 3)
-                  .attr("d", lineGen),
-              update => update.call(update => update.transition().duration(750).attr("d", lineGen)),
-              exit => exit.call(exit => exit.transition().duration(750).attr("opacity", 0).remove())
-            );
+            .join("path")
+            .attr("class", "line")
+            .attr("fill", "none")
+            .attr("stroke", "#1DB954")
+            .attr("stroke-width", 3)
+            .attr("d", lineGen);
 
           // add circles
           chartArea
@@ -288,16 +275,15 @@
             .data(inputData, (d) => d[0])
             .join("circle")
             .attr("r", 3)
-            .attr("fill", "navy")
+            .attr("fill", "green")
             .attr("cx", (d) => dateScale(d[0]))
             .attr("cy", (d) => metricScale(d[1][metric]));
 
+          // Show info about each metric
           d3.csv("metric_defs.csv").then((data) => {
-            document.getElementById("metricsChartTitle").innerHTML = `Average ${capitalizeFirstLetter(selectedMetric)} Patterns`
-            document.getElementById("metricsChartDesc").innerHTML = `${data[0][selectedMetric]}  Shown here are the trends in average ${capitalizeFirstLetter(selectedMetric)} of songs Reid listened to over the time period.`
+            document.getElementById("metricsChartTitle").innerHTML = `Average ${selectedMetric} Patterns`
+            document.getElementById("metricsChartDesc").innerHTML = `${data[0][selectedMetric]}  Shown here are the trends in average ${selectedMetric} of songs Reid listened to over the time period.`
           })
-
-
         }
 
         /* Function to filter by years*/
@@ -312,31 +298,42 @@
           })
         }
 
-        
-        const metricSelect = d3.select("#metricSelect");
-        metricSelect
+        // Year dropdown
+        let startYear = 2015;
+        let endYear = 2024;
+
+        const selectorOptions = Array.from(yearData.keys())
+        selectorOptions.push("All-Time")
+
+        const yearSelect = d3.select("#yearSelect");
+        yearSelect
           .selectAll("option")
-          // .data(Array.from(["danceability", "energy", "key", "loudness", "mode", "speechiness", "acousticness", "instrumentalness", "liveness", "valence", "tempo", "duration_ms", "time_signature", "num_listens"]))
-          .data(Object.keys(monthlyMetrics[0][1]))
+          .data(
+            selectorOptions
+          )
           .enter()
           .append("option")
           .text((d) => d)
           .attr("value", (d) => d);
 
-        var selectedMetric = metricSelect.property("value");
+        yearSelect.on("change", function () {
+          const selectedYear = this.value;
+          startYear = selectedYear
+          endYear = selectedYear
+          if (selectedYear === "All-Time") {
+            startYear = 2015
+            endYear = 2024
+          }
 
-        metricSelect.on("change", function () {
-          selectedMetric = this.value;
-
+          updateBarChart("Songs", "track", "songLabel", selectedYear)
+          updateBarChart("Artists", "artist", "artistLabel", selectedYear)
+          updateBarChart("Albums", "album", "albumLabel", selectedYear)
           updateChart(dataForInterval(startYear, endYear), selectedMetric);
+          updateDisplay(d3.select("#startWindowContainer"), startYear);
+          updateDisplay(d3.select("#endWindowContainer"), endYear);
         });
 
-        /*  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-        /* Year interval windows & buttons */
-        let startYear = 2015;
-        let endYear = 2024;
-
-        //update the displayed value
+        // Year Intervals
         function updateDisplay(container, value) {
           container.select(".window-display").text(value);
         }
@@ -415,53 +412,29 @@
           }
         );
 
-        // https://stackoverflow.com/questions/1026069/how-do-i-make-the-first-letter-of-a-string-uppercase-in-javascript
-        function capitalizeFirstLetter(val) {
-          return String(val).charAt(0).toUpperCase() + String(val).slice(1);
-        }
-
-        /*  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-
-        /* initial chart rendering*/
-        dataForInterval(startYear, endYear);
-        updateChart(monthlyMetrics, selectedMetric);
-
-
-        // BAR CHART
-        const selectorOptions = Array.from(yearData.keys())
-        console.log(selectorOptions)
-        selectorOptions.push("All-Time")
-        console.log(selectorOptions)
-
-        const yearSelect = d3.select("#yearSelect");
-        yearSelect
+        // Metric dropdown
+        const metricSelect = d3.select("#metricSelect");
+        metricSelect
           .selectAll("option")
-          .data(
-            selectorOptions
-          )
+          .data(Object.keys(monthlyMetrics[0][1]))
           .enter()
           .append("option")
           .text((d) => d)
           .attr("value", (d) => d);
 
-        yearSelect.on("change", function () {
-          const selectedYear = this.value;
-          startYear = selectedYear
-          endYear = selectedYear
-          if (selectedYear === "All-Time") {
-            startYear = 2015
-            endYear = 2024
-          }
+        var selectedMetric = metricSelect.property("value");
 
-
-          updateBarChart("Songs", "track", "songLabel", selectedYear)
-          updateBarChart("Artists", "artist", "artistLabel", selectedYear)
-          updateBarChart("Albums", "album", "albumLabel", selectedYear)
+        metricSelect.on("change", function () {
+          selectedMetric = this.value;
           updateChart(dataForInterval(startYear, endYear), selectedMetric);
-          updateDisplay(d3.select("#startWindowContainer"), startYear);
-          updateDisplay(d3.select("#endWindowContainer"), endYear);
         });
 
+        // initial line chart rendering
+        dataForInterval(startYear, endYear);
+        updateChart(monthlyMetrics, selectedMetric);
+
+
+        // Bar Charts
         function updateBarChart(selector, variable, label, year) {
           const barSvg = d3.select(`svg#${selector}`);
           const barWidth = barSvg.attr("width");
@@ -478,8 +451,6 @@
 
           let barAnnotations = barSvg.append("g").attr("id", "barAnnotations");
 
-          console.log(startYear)
-
           var filteredData = data
           if (year !== "All-Time") {
             filteredData = Array.from(yearData)
@@ -487,26 +458,20 @@
               .flatMap(([, songs]) => songs);
           }
 
-          console.log(filteredData)
-
           const counts = d3.rollup(
             filteredData,
             (v) => v.length,
             (d) => d[variable]
           );
 
-          console.log(counts)
-          console.log(Array.from(counts).length)
-          console.log(`${selector}Num`)
-
+          // Calculate total number metrics
           document.getElementById("TotalSongsNum").innerHTML = `${filteredData.length} Total Songs`
           document.getElementById(`${selector}Num`).innerHTML = `${Array.from(counts).length} Unique ${selector}`
 
+          // Get top 10 items
           const top10 = Array.from(counts)
             .sort((a, b) => b[1] - a[1])
             .slice(0, 10);
-
-          console.log(top10)
 
           const yScale = d3
             .scaleBand()
@@ -518,7 +483,6 @@
             .scaleLinear()
             .domain([0, d3.max(top10, (d) => d[1])])
             .range([0, barChartWidth]);
-
 
           barChartArea.selectAll("rect").remove();
           barAnnotations.selectAll(".bar-axis").remove();
@@ -571,9 +535,10 @@
             .attr("y", (d) => yScale(d[0]))
             .attr("height", yScale.bandwidth())
             .attr("width", (d) => xScale(d[1]))
-            .attr("fill", "steelblue")
+            .attr("fill", "#1DB954")
             .attr("opacity", 0.5);
 
+          // add bar text
           barChartArea
             .selectAll(".bar-text")
             .data(top10)
@@ -623,6 +588,8 @@
             });
 
           barChartArea.selectAll(".bar-text").raise();
+
+          // text on mouseover
           barChartArea
             .selectAll(".bar-text")
             .on("mouseover", function (event, d) {
@@ -640,11 +607,9 @@
           updateBarChart("Albums", "album", "albumLabel", init)
         }
 
+        // initialize bar charts
         updateBarCharts("All-Time")
-
       });
-
-
     </script>
 </body>
 
